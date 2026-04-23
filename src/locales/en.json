@@ -1,0 +1,101 @@
+{
+  "common": { "disclaimer": "" },
+  "seo": {
+    "title": "AshTech Software Solutions | AI, Web, Mobile, Web3, Robotics",
+    "description": "AshTech Software Solutions builds AI tools, mobile apps, websites, Web3 products, robotics software, and e-commerce platforms."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "founder": "Founder",
+    "comingSoon": "Coming Soon",
+    "contact": "Contact"
+  },
+  "hero": {
+    "title1": "We Build",
+    "title2": "Digital Products",
+    "title3": "That Deliver.",
+    "subtitle": "AI tools. Web apps. Mobile. Web3. E-commerce. Interactive portfolios. Real software, built by real developers.",
+    "cta": "Get In Touch",
+    "cta2": "What's coming?"
+  },
+  "about": {
+    "title": "About AshTech",
+    "p1": "AshTech Software Solutions is a technology company built on one principle - great software changes everything.",
+    "p2": "We specialize in varied domains including AI-powered systems, mobile applications, Web3/Blockchain ecosystems, robotics software, and comprehensive E-commerce platforms.",
+    "p3": "We do not just write code. We architect systems, design experiences, and build agentic AI workflows and products that are fast, scalable, and ready for the real world.",
+    "p4": "From Kerala, India — we build technology with a global outlook, proudly serving clients across India and the MENA region.",
+    "stats1Label": "Projects Delivered",
+    "stats1Value": "10+",
+    "stats2Label": "Tech Verticals",
+    "stats2Value": "4+",
+    "stats3Label": "Client Focused",
+    "stats3Value": "100%"
+  },
+  "services": {
+    "title": "What We Build",
+    "portfolio": { "title": "Portfolio Websites", "desc": "Custom portfolio websites with clean design and strong performance." },
+    "ecommerce": { "title": "E-commerce Platforms", "desc": "Scalable online stores with secure checkout and product management." },
+    "interactive": { "title": "Interactive Websites", "desc": "Immersive, motion-rich web experiences for modern brands." },
+    "ai": { "title": "AI Tools & Agentic Workflows", "desc": "Practical AI features, assistants, and AI-agentic workflows integrated into real products." },
+    "mobile": { "title": "Mobile Apps", "desc": "Android and cross-platform apps built for reliability and speed." },
+    "web3": { "title": "Web3 Solutions", "desc": "Blockchain-backed products, smart integrations, and decentralized systems." },
+    "robotics": { "title": "Robotics Software", "desc": "Control systems and software logic for robotics-driven workflows." },
+    "uiux": { "title": "UI/UX Design", "desc": "Product-first interfaces focused on clarity, usability, and conversion." }
+  },
+  "founder": {
+    "title": "Behind AshTech",
+    "p1": "Ashfaaq KT is a software engineer from Kerala, India, specializing in AI-integrated full-stack development. He founded AshTech to bridge the gap between complex engineering and accessible, world-class digital products for global clients.",
+    "link": "Full Portfolio",
+    "quote": "I founded AshTech with a simple passion: to make world-class technology accessible to everyone. By leveraging AI, we’ve reimagined development to be simpler, faster, and more transparent, allowing visionary ideas to come to life effortlessly.",
+    "quoteAuthor": "Ashfaaq KT"
+  },
+  "comingSoon": {
+    "status": "In Development",
+    "title": "We're Baking Something Saucey",
+    "intro": "The AshTech glow-up is real. Soon, you'll be able to:",
+    "item1": "Secure the bag by requesting your project directly",
+    "item2": "Track the grind in real-time from start to finish",
+    "item3": "Get live updates while we're in the lab cooking",
+    "item4": "Direct line to the devs—no gatekeeping allowed",
+    "tagline": "Main character energy. No cap. Full transparency.",
+    "cta": "Get on the List",
+    "modalTitle": "Join the inner circle",
+    "email": "Your best email",
+    "submit": "I'm in",
+    "success": "You're officially on the roster! Stay winning.",
+    "processTitle": "How It Works",
+    "process": {
+      "step1": { "title": "1. Sign In & Connect", "desc": "Apply for your project seamlessly. Browse curated lists of AshTech developers with transparent hourly rates or fixed quotes." },
+      "step2": { "title": "2. Select & Confirm", "desc": "Handpick your dedicated developer. Receive officially recorded kickoff confirmations via SMS and Email." },
+      "step3": { "title": "3. Live Tracking", "desc": "Watch your product come to life in real-time. Monitor delivery dates and securely inject live comments during development." },
+      "step4": { "title": "4. Transparent Billing", "desc": "No hidden fees. Review crystal-clear breakdowns of API costs, database expenses, and developer time." },
+      "step5": { "title": "5. Delivery & Review", "desc": "Receive the complete, polished project folder and raw source code. Deploy, evaluate, and scale your business." }
+    }
+  },
+  "contact": {
+    "title": "Get In Touch",
+    "subtitle": "Project requests, collaborations, or just a hello - reach out and we will get back to you within 24 hours.",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "subject": "Subject",
+    "message": "Message",
+    "submit": "Submit",
+    "success": "Thanks! We have received your message and will get back to you shortly.",
+    "location": "Kozhikode, Kerala, India"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "brand": "AshTech Software Solutions",
+    "desc": "AshTech Software Solutions builds AI, web, mobile, Web3, and robotics products with a clean monochrome identity and bold execution."
+  },
+  "chatbot": {
+    "title": "AshTech AI",
+    "welcome": "Hi, I am AshTech AI. Ask me about our services, projects, or founder.",
+    "placeholder": "Ask about AshTech...",
+    "send": "Send",
+    "typing": "Typing...",
+    "restricted": "I am specialized in AshTech topics. Ask me about our services, projects, or founder!"
+  }
+}
