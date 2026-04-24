@@ -165,8 +165,6 @@ app.post('/api/chat', requireSession, async (req, res) => {
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`
-    
     let formattedContents = []
     if (history.length > 0) {
       formattedContents = history.map(m => ({
@@ -194,19 +192,43 @@ app.post('/api/chat', requireSession, async (req, res) => {
       contents: formattedContents
     }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    const data = await response.json()
+    const models = [
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash-exp'
+    ]
 
-    if (!response.ok) {
+    let finalData = null
+    let success = false
+
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok && data.candidates?.length > 0) {
+          finalData = data
+          success = true
+          break
+        }
+      } catch (err) {
+        // Ignore error and try the next model
+      }
+    }
+
+    if (!success) {
       res.json({ reply: "The neural network is busy. Please try again in a moment!" })
       return
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm not sure how to respond."
+    const reply = finalData.candidates[0]?.content?.parts?.[0]?.text || "I'm not sure how to respond."
     res.json({ reply })
   } catch (error) {
     res.json({ reply: "An error occurred with the AI. Please try again later." })
