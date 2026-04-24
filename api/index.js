@@ -14,6 +14,8 @@ const mediaSecret = process.env.MEDIA_SECRET || 'ashtech-media-secret'
 const sessionName = 'ashtech_session'
 const geminiApiKey = process.env.VITE_GEMINI_API_KEY
 
+// Using multiple models to ensure high availability on Gemini Free Tier
+
 const rateLimitMap = new Map()
 
 const contentTypes = new Map([
