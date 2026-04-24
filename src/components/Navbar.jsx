@@ -182,9 +182,9 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
                <motion.div 
                  animate={{ 
                    height: isActive ? 32 : 8, 
-                   opacity: isActive ? 1 : 0.3,
+                   opacity: isActive ? 1 : 0.5,
                  }}
-                 className={`w-1 rounded-full transition-colors duration-500 ${isActive ? 'bg-black shadow-[0_0_8px_rgba(0,0,0,0.6)] dark:bg-white dark:shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'bg-black/30 dark:bg-white/30'}`}
+                 className={`w-1 rounded-full transition-colors duration-500 ${isActive ? 'bg-black shadow-[0_0_8px_rgba(0,0,0,0.6)] dark:bg-white dark:shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'bg-black dark:bg-white'}`}
                />
             </div>
           )
