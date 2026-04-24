@@ -14,6 +14,8 @@ const mediaSecret = process.env.MEDIA_SECRET || 'ashtech-media-secret'
 const sessionName = 'ashtech_session'
 const geminiApiKey = process.env.VITE_GEMINI_API_KEY
 
+const rateLimitMap = new Map()
+
 const contentTypes = new Map([
   ['.png', 'image/png'],
   ['.jpg', 'image/jpeg'],
@@ -131,11 +133,31 @@ app.get('/api/media/:file', requireSession, async (req, res) => {
 })
 
 app.post('/api/chat', requireSession, async (req, res) => {
-  const message = String(req.body?.message || '').trim()
-  if (!message) {
+  const history = req.body?.messages || []
+  const fallbackMessage = String(req.body?.message || '').trim()
+
+  if (!history.length && !fallbackMessage) {
     res.status(400).json({ error: 'Message required' })
     return
   }
+
+  // Rate Limiting
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'
+  const now = Date.now()
+  const userRecord = rateLimitMap.get(ip) || { count: 0, lastReset: now }
+
+  if (now - userRecord.lastReset > 60000) {
+    userRecord.count = 0
+    userRecord.lastReset = now
+  }
+
+  if (userRecord.count >= 10) {
+    res.json({ reply: "You are sending too many messages. Please wait a moment." })
+    return
+  }
+
+  userRecord.count++
+  rateLimitMap.set(ip, userRecord)
 
   if (!geminiApiKey) {
     res.json({ reply: "Ask me about AshTech services, projects, or our founder Ashfaaq KT." })
@@ -143,7 +165,18 @@ app.post('/api/chat', requireSession, async (req, res) => {
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`
+    
+    let formattedContents = []
+    if (history.length > 0) {
+      formattedContents = history.map(m => ({
+        role: m.role === 'model' ? 'model' : 'user',
+        parts: [{ text: m.text }]
+      }))
+    } else {
+      formattedContents = [{ role: 'user', parts: [{ text: fallbackMessage }] }]
+    }
+
     const payload = {
       system_instruction: {
         parts: [{ text: `You are AshTech AI, the professional assistant for AshTech Software Solutions. 
@@ -155,10 +188,10 @@ app.post('/api/chat', requireSession, async (req, res) => {
           3. Live Tracking: Watch development live with secure comments.
           4. Transparent Billing: Clear breakdown of API, DB, and labor costs.
           5. Delivery: Receive complete project folder and source code.
-          Style: Keep answers super brief, helpful, and modern. 
+          Style: Provide helpful, detailed, and professional answers. Do not be overly brief.
           IMPORTANT: If the user speaks Arabic, reply in Arabic. Use Markdown (**bold**, tables, lists) to format info.` }]
       },
-      contents: [{ parts: [{ text: message }] }]
+      contents: formattedContents
     }
 
     const response = await fetch(url, {

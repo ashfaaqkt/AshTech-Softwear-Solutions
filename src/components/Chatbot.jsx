@@ -31,11 +31,15 @@ export default function Chatbot() {
     setIsLoading(true)
 
     try {
+      const apiMessages = [...messages.slice(1), { role: 'user', text: userText }]
       const response = await fetch('/api/chat', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText }),
+        body: JSON.stringify({ 
+          message: userText, // fallback
+          messages: apiMessages 
+        }),
       })
       const data = await response.json()
       const reply = response.ok ? data.reply : t('chatbot.restricted')

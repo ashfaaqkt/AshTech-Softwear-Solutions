@@ -60,6 +60,18 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
     }
   }, [])
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
+
   const [isSidebarHovered, setIsSidebarHovered] = useState(false)
   const hoverTimeoutRef = useRef(null)
 
@@ -286,7 +298,7 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="flex-1 overflow-y-auto space-y-3 pe-2 -me-2">
                 {navItems.map((item, index) => {
                   const Icon = item.icon
                   return (
