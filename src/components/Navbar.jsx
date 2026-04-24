@@ -172,7 +172,7 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
                    height: isActive ? 32 : 8, 
                    opacity: isActive ? 1 : 0.3,
                  }}
-                 className={`w-1 rounded-full transition-colors duration-500 ${isActive ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]' : 'bg-black/30 dark:bg-white/30'}`}
+                 className={`w-1 rounded-full transition-colors duration-500 ${isActive ? 'bg-black shadow-[0_0_8px_rgba(0,0,0,0.6)] dark:bg-white dark:shadow-[0_0_8px_rgba(255,255,255,0.6)]' : 'bg-black/30 dark:bg-white/30'}`}
                />
             </div>
           )
