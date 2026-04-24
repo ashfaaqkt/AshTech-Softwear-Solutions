@@ -23,6 +23,26 @@ export default function Chatbot() {
     }
   }, [messages, isLoading])
 
+  // Lock body scroll on mobile size when chatbot is open
+  useEffect(() => {
+    const handleResize = () => {
+      if (isOpen && window.innerWidth < 768) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+    }
+
+    // Initial check
+    handleResize()
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
   const sendMessage = async (userText) => {
     if (!userText.trim()) return
 
