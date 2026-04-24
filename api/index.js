@@ -12,7 +12,7 @@ const app = express()
 
 const mediaSecret = process.env.MEDIA_SECRET || 'ashtech-media-secret'
 const sessionName = 'ashtech_session'
-const geminiApiKey = process.env.VITE_GEMINI_API_KEY
+const deepseekApiKey = process.env.DEEPSEEK_API_KEY
 
 // Using multiple models to ensure high availability on Gemini Free Tier
 
@@ -134,6 +134,8 @@ app.get('/api/media/:file', requireSession, async (req, res) => {
   }
 })
 
+
+
 app.post('/api/chat', requireSession, async (req, res) => {
   const history = req.body?.messages || []
   const fallbackMessage = String(req.body?.message || '').trim()
@@ -161,78 +163,70 @@ app.post('/api/chat', requireSession, async (req, res) => {
   userRecord.count++
   rateLimitMap.set(ip, userRecord)
 
-  if (!geminiApiKey) {
+  if (!deepseekApiKey) {
     res.json({ reply: "Ask me about AshTech services, projects, or our founder Ashfaaq KT." })
     return
   }
 
   try {
-    let formattedContents = []
-    if (history.length > 0) {
-      formattedContents = history.map(m => ({
-        role: m.role === 'model' ? 'model' : 'user',
-        parts: [{ text: m.text }]
-      }))
-    } else {
-      formattedContents = [{ role: 'user', parts: [{ text: fallbackMessage }] }]
-    }
+    const messages = [
+      {
+        role: "system",
+        content: `You are AshTech AI, the professional assistant for AshTech Software Solutions. 
 
-    const payload = {
-      system_instruction: {
-        parts: [{ text: `You are AshTech AI, the professional assistant for AshTech Software Solutions. 
+          STRICT TOPIC LIMIT: You are programmed to ONLY discuss AshTech Software Solutions (our company) and Ashfaaq KT (our founder). If you are asked about any other topics, politely inform the user that you are an AI dedicated specifically to AshTech and offer to help them with information about our services or the founder.
+
           Our Company: Based in Kozhikode, Kerala. We build AI tools, Mobile apps (Android/Cross-platform), Web3/Blockchain solutions, Robotics software, E-commerce, and premium Portfolios.
-          Our Founder: Ashfaaq KT (Arabic name: أشفاق كي تي, Full name: Ashfaaq Feroz Muhammad). He is a B.Sc. Computer Science student at BITS Pilani. He is an expert in MERN Full-Stack development, AI-assisted workflows, and UI/UX. He has experience at Entri Elevate in Kochi and works across India and Saudi Arabia.
+          Our Founder: Ashfaaq KT (Arabic name: أشفاق كي تي, Full name: Ashfaaq Feroz Muhammad). He is a B.Sc. Computer Science student at BITS Pilani. He is an expert in MERN Full-Stack development, AI-assisted workflows, and UI/UX. Website: ashfaaqkt.com.
+
           "How It Works" Process: 
           1. Sign In & Connect: Apply for projects and browse developer rates.
           2. Select & Confirm: Handpick a developer and get SMS/Email confirmation.
           3. Live Tracking: Watch development live with secure comments.
           4. Transparent Billing: Clear breakdown of API, DB, and labor costs.
           5. Delivery: Receive complete project folder and source code.
-          Style: Provide helpful, detailed, and professional answers. Do not be overly brief.
-          IMPORTANT: If the user speaks Arabic, reply in Arabic. Use Markdown (**bold**, tables, lists) to format info.` }]
-      },
-      contents: formattedContents
-    }
 
-    const models = [
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-8b',
-      'gemini-1.5-pro',
-      'gemini-2.0-flash-exp'
+          STYLE & FORMATTING:
+          - Always use Markdown for formatting: use **bold** for emphasis and create Markdown tables to organize information whenever possible.
+          - If the user speaks Arabic, you MUST respond in Arabic.
+          - Provide helpful, professional, and detailed answers.`
+      },
+      ...history.map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.text
+      }))
     ]
 
-    let finalData = null
-    let success = false
-
-    for (const model of models) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-        
-        const data = await response.json()
-        
-        if (response.ok && data.candidates?.length > 0) {
-          finalData = data
-          success = true
-          break
-        }
-      } catch (err) {
-        // Ignore error and try the next model
-      }
+    if (history.length === 0) {
+      messages.push({ role: "user", content: fallbackMessage })
     }
 
-    if (!success) {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${deepseekApiKey}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 2048
+      })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error('DeepSeek Error:', data)
       res.json({ reply: "The neural network is busy. Please try again in a moment!" })
       return
     }
 
-    const reply = finalData.candidates[0]?.content?.parts?.[0]?.text || "I'm not sure how to respond."
+    const reply = data.choices?.[0]?.message?.content || "I'm not sure how to respond."
     res.json({ reply })
   } catch (error) {
+    console.error('AI Error:', error)
     res.json({ reply: "An error occurred with the AI. Please try again later." })
   }
 })
