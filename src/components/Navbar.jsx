@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   LuChevronRight,
   LuHouse,
@@ -57,6 +57,26 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
     return () => {
       clearTimeout(timeoutId)
       observer.disconnect()
+    }
+  }, [])
+
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false)
+  const hoverTimeoutRef = useRef(null)
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    setIsSidebarHovered(true)
+  }
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsSidebarHovered(false)
+    }, 300)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
     }
   }, [])
 
@@ -126,8 +146,53 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
         </div>
       </header>
 
-      {/* Desktop Vertical Sidebar Navigation (Right Side) */}
-      <nav className="fixed end-5 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-4 md:flex">
+      {/* Desktop Sidebar Trigger Zone */}
+      <div 
+        className="fixed top-0 bottom-0 w-12 z-30 hidden md:block end-0"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      />
+
+      {/* Futuristic Edge Indicator */}
+      <motion.div
+        className="fixed top-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col gap-4 p-2 pointer-events-none end-0"
+        initial={false}
+        animate={{ 
+          opacity: isSidebarHovered ? 0 : 1,
+          x: isSidebarHovered ? (isArabic ? -20 : 20) : 0,
+        }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {navItems.map((item) => {
+          const isActive = activeSection === item.id;
+          return (
+            <div key={`indicator-${item.key}`} className="flex items-center justify-center h-12 w-2">
+               <motion.div 
+                 animate={{ 
+                   height: isActive ? 32 : 8, 
+                   opacity: isActive ? 1 : 0.3,
+                 }}
+                 className={`w-1 rounded-full transition-colors duration-500 ${isActive ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]' : 'bg-black/30 dark:bg-white/30'}`}
+               />
+            </div>
+          )
+        })}
+      </motion.div>
+
+      {/* Desktop Vertical Sidebar Navigation (Right Side in LTR, Left Side in RTL) */}
+      <motion.nav 
+        className="fixed end-5 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-4 md:flex"
+        initial={false}
+        animate={{ 
+          x: isSidebarHovered ? 0 : (isArabic ? -100 : 100),
+          opacity: isSidebarHovered ? 1 : 0,
+          filter: isSidebarHovered ? 'blur(0px)' : 'blur(8px)',
+          pointerEvents: isSidebarHovered ? 'auto' : 'none'
+        }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activeSection === item.id
@@ -143,9 +208,9 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
               <AnimatePresence>
                 {isActive && (
                   <motion.span
-                    initial={{ opacity: 0, x: 12, filter: 'blur(4px)' }}
+                    initial={{ opacity: 0, x: isArabic ? -12 : 12, filter: 'blur(4px)' }}
                     animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                    exit={{ opacity: 0, x: 12, filter: 'blur(4px)' }}
+                    exit={{ opacity: 0, x: isArabic ? -12 : 12, filter: 'blur(4px)' }}
                     className="surface rounded-full px-4 py-2 text-[12px] font-black uppercase tracking-[0.15em] text-black shadow-2xl backdrop-blur-xl dark:text-white border border-black/5 dark:border-white/5"
                   >
                     {t(`nav.${item.key}`)}
@@ -171,7 +236,7 @@ export default function Navbar({ theme, onToggleTheme, language, onLanguageChang
             </button>
           )
         })}
-      </nav>
+      </motion.nav>
 
       <AnimatePresence>
         {open && (
