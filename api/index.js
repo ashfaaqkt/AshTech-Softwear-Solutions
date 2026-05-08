@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(path.dirname(__filename)) // Go up to root if needed, but we don't need it now
+const __dirname = path.dirname(path.dirname(__filename)) 
 const app = express()
 
 const mediaSecret = process.env.MEDIA_SECRET || 'ashtech-media-secret'
@@ -101,7 +101,6 @@ app.post('/api/chat', requireSession, async (req, res) => {
   userRecord.count++
   rateLimitMap.set(ip, userRecord)
 
-  // Local fallback response if no API key is present
   const localFallback = "I am AshTech AI. I can help you with information about AshTech Software Solutions and our founder Ashfaaq KT. How can I assist you today?"
 
   if (!geminiApiKey) {
@@ -129,33 +128,21 @@ app.post('/api/chat', requireSession, async (req, res) => {
     - If the user speaks Arabic, you MUST respond in Arabic.
     - Provide helpful, professional, and detailed answers.`
 
-  // Gemini models with explicit versions (Updated for May 2026 GA)
   const aiModels = [
-    { provider: 'gemini', model: 'gemini-1.5-flash', version: 'v1' },
-    { provider: 'gemini', model: 'gemini-1.5-flash-8b', version: 'v1' }
+    { provider: 'gemini', model: 'gemini-1.5-flash', version: 'v1beta' },
+    { provider: 'gemini', model: 'gemini-1.5-flash-8b', version: 'v1beta' },
+    { provider: 'gemini', model: 'gemini-3.1-flash-lite', version: 'v1beta' }
   ]
 
   for (const ai of aiModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/${ai.version}/models/${ai.model}:generateContent?key=${geminiApiKey}`
       
-      // Format contents for Gemini v1 (no system_instruction field in some v1 models)
       let geminiContents = []
-      
-      // Inject system prompt as first message if history is empty or as context
-      geminiContents.push({
-        role: 'user',
-        parts: [{ text: `SYSTEM INSTRUCTION: ${systemPrompt}\n\nUSER MESSAGE BELOW:` }]
-      })
-
       if (history.length > 0) {
-        history.forEach((m, idx) => {
-          // Gemini v1 expects strict user/model alternating
-          // Since we started with a user message (system prompt), next must be model
+        history.forEach((m) => {
           const actualRole = m.role === 'model' ? 'model' : 'user'
-          
-          // Ensure we don't have consecutive roles
-          if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role !== actualRole) {
+          if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role !== actualRole) {
             geminiContents.push({
               role: actualRole,
               parts: [{ text: m.text }]
@@ -164,20 +151,17 @@ app.post('/api/chat', requireSession, async (req, res) => {
         })
       }
 
-      // Ensure the very last message is from the user
-      if (geminiContents[geminiContents.length - 1].role === 'model') {
+      if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role === 'model') {
         geminiContents.push({
           role: 'user',
           parts: [{ text: fallbackMessage }]
         })
-      } else if (history.length === 0) {
-        // If history was empty, our first message was the system prompt + fallback
-        // we can just append the actual user message to that first part if needed, 
-        // but the above logic handles a fresh start well enough.
-        geminiContents[0].parts[0].text += `\n${fallbackMessage}`
       }
       
       const payload = {
+        system_instruction: { 
+          parts: [{ text: systemPrompt }] 
+        },
         contents: geminiContents,
         generationConfig: {
           temperature: 0.7,
