@@ -129,11 +129,10 @@ app.post('/api/chat', requireSession, async (req, res) => {
     - If the user speaks Arabic, you MUST respond in Arabic.
     - Provide helpful, professional, and detailed answers.`
 
-  // Gemini models with explicit versions
+  // Gemini models with explicit versions (Updated for May 2026 GA)
   const aiModels = [
     { provider: 'gemini', model: 'gemini-1.5-flash', version: 'v1' },
-    { provider: 'gemini', model: 'gemini-1.5-flash-8b', version: 'v1' },
-    { provider: 'gemini', model: 'gemini-2.0-flash-lite-preview-02-05', version: 'v1beta' }
+    { provider: 'gemini', model: 'gemini-1.5-flash-8b', version: 'v1' }
   ]
 
   for (const ai of aiModels) {
