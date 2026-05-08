@@ -148,7 +148,9 @@ app.post('/api/chat', requireSession, async (req, res) => {
         : [{ role: 'user', parts: [{ text: fallbackMessage }] }]
       
       const payload = {
-        system_instruction: { parts: [{ text: systemPrompt }] },
+        system_instruction: { 
+          parts: [{ text: systemPrompt }] 
+        },
         contents: geminiContents,
         generationConfig: {
           temperature: 0.7,
@@ -156,6 +158,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
         }
       }
 
+      console.log(`Attempting Gemini request to ${ai.model}...`)
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,7 +168,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
       const data = await response.json()
 
       if (!response.ok) {
-        console.warn(`AI model ${ai.model} returned status ${response.status}`, data)
+        console.error(`Gemini Error [${ai.model}]:`, JSON.stringify(data, null, 2))
         if (response.status === 429) break 
         continue
       }
@@ -177,7 +180,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
         return
       }
     } catch (error) {
-      console.error(`Error with model ${ai.model}:`, error)
+      console.error(`Fetch Error with model ${ai.model}:`, error.message)
     }
   }
 
