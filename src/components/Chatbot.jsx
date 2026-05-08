@@ -44,7 +44,7 @@ export default function Chatbot() {
   }, [isOpen])
 
   const sendMessage = async (userText) => {
-    if (!userText.trim()) return
+    if (!userText.trim() || isLoading) return
 
     setMessages((prev) => [...prev, { role: 'user', text: userText }])
     setInput('')
@@ -61,10 +61,18 @@ export default function Chatbot() {
           messages: apiMessages 
         }),
       })
+      
       const data = await response.json()
-      const reply = response.ok ? data.reply : t('chatbot.restricted')
-      setMessages((prev) => [...prev, { role: 'model', text: reply }])
-    } catch {
+      
+      if (response.ok && data.reply) {
+        setMessages((prev) => [...prev, { role: 'model', text: data.reply }])
+      } else {
+        // Use the reply from server if available (e.g. rate limit message)
+        const errorMessage = data.reply || t('chatbot.restricted')
+        setMessages((prev) => [...prev, { role: 'model', text: errorMessage }])
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
       setMessages((prev) => [...prev, { role: 'model', text: t('chatbot.restricted') }])
     } finally {
       setIsLoading(false)

@@ -1,28 +1,15 @@
 import express from 'express'
 import crypto from 'node:crypto'
-import fs from 'node:fs'
-import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const assetsDir = path.join(__dirname, 'private-assets')
+const __dirname = path.dirname(path.dirname(__filename)) // Go up to root if needed, but we don't need it now
 const app = express()
 
 const mediaSecret = process.env.MEDIA_SECRET || 'ashtech-media-secret'
 const sessionName = 'ashtech_session'
 const rateLimitMap = new Map()
-
-const contentTypes = new Map([
-  ['.png', 'image/png'],
-  ['.jpg', 'image/jpeg'],
-  ['.jpeg', 'image/jpeg'],
-  ['.gif', 'image/gif'],
-  ['.mp4', 'video/mp4'],
-  ['.webp', 'image/webp'],
-  ['.svg', 'image/svg+xml'],
-])
 
 function sign(value) {
   return crypto.createHmac('sha256', mediaSecret).update(value).digest('base64url')
@@ -85,53 +72,7 @@ app.get('/api/session', (req, res) => {
   res.json({ ok: true })
 })
 
-app.get('/api/media-url/:file', requireSession, async (req, res) => {
-  try {
-    const file = req.params.file
-    const filePath = path.join(assetsDir, file)
-    const normalized = path.normalize(filePath)
-    if (!normalized.startsWith(assetsDir)) {
-      res.status(400).json({ error: 'Invalid file' })
-      return
-    }
-    await fsp.access(normalized, fs.constants.R_OK)
-    const expires = Math.floor(Date.now() / 1000) + 60 * 10
-    const payload = `${file}:${expires}`
-    const token = sign(payload)
-    res.json({ url: `/api/media/${encodeURIComponent(file)}?exp=${expires}&sig=${token}` })
-  } catch {
-    res.status(404).json({ error: 'Not found' })
-  }
-})
-
-app.get('/api/media/:file', requireSession, async (req, res) => {
-  const file = req.params.file
-  const { exp, sig } = req.query
-  const expected = sign(`${file}:${exp}`)
-  if (!exp || !sig || sig !== expected || Number(exp) < Math.floor(Date.now() / 1000)) {
-    res.status(403).json({ error: 'Invalid signature' })
-    return
-  }
-
-  const filePath = path.normalize(path.join(assetsDir, file))
-  if (!filePath.startsWith(assetsDir)) {
-    res.status(400).json({ error: 'Invalid file' })
-    return
-  }
-
-  try {
-    const ext = path.extname(filePath).toLowerCase()
-    res.setHeader('Content-Type', contentTypes.get(ext) || 'application/octet-stream')
-    res.setHeader('Cache-Control', 'private, max-age=600')
-    const buffer = await fsp.readFile(filePath)
-    res.send(buffer)
-  } catch {
-    res.status(404).json({ error: 'Not found' })
-  }
-})
-
-const geminiApiKey = process.env.VITE_GEMINI_API_KEY
-const deepseekApiKey = process.env.DEEPSEEK_API_KEY
+const geminiApiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
 
 app.post('/api/chat', requireSession, async (req, res) => {
   const history = req.body?.messages || []
@@ -160,8 +101,11 @@ app.post('/api/chat', requireSession, async (req, res) => {
   userRecord.count++
   rateLimitMap.set(ip, userRecord)
 
-  if (!geminiApiKey && !deepseekApiKey) {
-    res.json({ reply: "Ask me about AshTech services, projects, or our founder Ashfaaq KT." })
+  // Local fallback response if no API key is present
+  const localFallback = "I am AshTech AI. I can help you with information about AshTech Software Solutions and our founder Ashfaaq KT. How can I assist you today?"
+
+  if (!geminiApiKey) {
+    res.json({ reply: localFallback })
     return
   }
 
@@ -184,82 +128,55 @@ app.post('/api/chat', requireSession, async (req, res) => {
     - If the user speaks Arabic, you MUST respond in Arabic.
     - Provide helpful, professional, and detailed answers.`
 
+  // Gemini models (Reliable Free Tier)
   const aiModels = [
-    { provider: 'gemini', model: 'gemini-2.0-flash-lite-preview-02-05' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
-    { provider: 'gemini', model: 'gemini-1.5-flash-8b' },
-    { provider: 'deepseek', model: 'deepseek-chat' }
+    { provider: 'gemini', model: 'gemini-1.5-flash-8b' }
   ]
 
   for (const ai of aiModels) {
     try {
-      let response
-      if (ai.provider === 'gemini') {
-        if (!geminiApiKey) continue
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${ai.model}:generateContent?key=${geminiApiKey}`
-        
-        const geminiContents = history.length > 0 
-          ? history.map(m => ({
-              role: m.role === 'model' ? 'model' : 'user',
-              parts: [{ text: m.text }]
-            }))
-          : []
-        
-        const payload = {
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: geminiContents.length > 0 ? geminiContents : [{ role: 'user', parts: [{ text: fallbackMessage }] }]
-        }
-
-        response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-      } else {
-        if (!deepseekApiKey) continue
-        const deepseekMessages = [
-          { role: "system", content: systemPrompt },
-          ...history.map(m => ({
-            role: m.role === 'model' ? 'assistant' : 'user',
-            content: m.text
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${ai.model}:generateContent?key=${geminiApiKey}`
+      
+      const geminiContents = history.length > 0 
+        ? history.map(m => ({
+            role: m.role === 'model' ? 'model' : 'user',
+            parts: [{ text: m.text }]
           }))
-        ]
-        if (history.length === 0) deepseekMessages.push({ role: "user", content: fallbackMessage })
+        : []
+      
+      const payload = {
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: geminiContents.length > 0 ? geminiContents : [{ role: 'user', parts: [{ text: fallbackMessage }] }]
+      }
 
-        response = await fetch('https://api.deepseek.com/chat/completions', {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${deepseekApiKey}`
-          },
-          body: JSON.stringify({
-            model: ai.model,
-            messages: deepseekMessages,
-            temperature: 0.7,
-            max_tokens: 2048
-          })
-        })
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.warn(`AI model ${ai.model} returned status ${response.status}`, errorData)
+        
+        if (response.status === 429) break 
+        continue
       }
 
       const data = await response.json()
-      if (response.ok) {
-        const reply = ai.provider === 'gemini' 
-          ? data.candidates?.[0]?.content?.parts?.[0]?.text 
-          : data.choices?.[0]?.message?.content
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
 
-        if (reply) {
-          res.json({ reply })
-          return
-        }
-      } else {
-        console.warn(`AI model ${ai.model} returned status ${response.status}`, data)
+      if (reply) {
+        res.json({ reply })
+        return
       }
     } catch (error) {
       console.error(`Error with model ${ai.model}:`, error)
     }
   }
 
-  res.json({ reply: "The neural network is busy. Please try again in a moment!" })
+  res.json({ reply: "I'm having a bit of trouble connecting to my knowledge base. Please try again in a moment, or feel free to ask about our services later!" })
 })
 
 export default app

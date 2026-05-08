@@ -9,6 +9,7 @@ export default function Hero({ theme }) {
   const isDark = theme === 'dark'
   const desktopVideoSrc = useProtectedAsset(isDark ? 'Title-Home-Dark.mp4' : 'Title-Home-Light.mp4')
   const mobileVideoSrc = useProtectedAsset(isDark ? 'Title-Home-Dark-D.mp4' : 'Title-Home-Light-D.mp4')
+  const posterSrc = useProtectedAsset(isDark ? 'Title-Home-Dark.png' : 'Title-Home-Light.png')
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
   const videoSrc = isMobile ? mobileVideoSrc : desktopVideoSrc
 
@@ -33,6 +34,7 @@ export default function Hero({ theme }) {
           muted
           loop
           playsInline
+          poster={posterSrc}
         >
           <source src={videoSrc} type="video/mp4" />
         </video>
