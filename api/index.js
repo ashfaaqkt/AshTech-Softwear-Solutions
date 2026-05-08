@@ -138,7 +138,9 @@ app.post('/api/chat', requireSession, async (req, res) => {
 
   for (const ai of aiModels) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${ai.model}:generateContent?key=${geminiApiKey}`
+      // Use v1 for stable models, v1beta for preview models
+      const apiVersion = ai.model.includes('preview') ? 'v1beta' : 'v1'
+      const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${ai.model}:generateContent?key=${geminiApiKey}`
       
       const geminiContents = history.length > 0 
         ? history.map(m => ({
@@ -158,7 +160,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
         }
       }
 
-      console.log(`Attempting Gemini request to ${ai.model}...`)
+      console.log(`Attempting Gemini request to ${ai.model} via ${apiVersion}...`)
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -168,7 +170,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
       const data = await response.json()
 
       if (!response.ok) {
-        console.error(`Gemini Error [${ai.model}]:`, JSON.stringify(data, null, 2))
+        console.error(`Gemini Error [${ai.model}] (${apiVersion}):`, JSON.stringify(data, null, 2))
         if (response.status === 429) break 
         continue
       }
