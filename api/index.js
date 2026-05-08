@@ -129,9 +129,9 @@ app.post('/api/chat', requireSession, async (req, res) => {
     - Provide helpful, professional, and detailed answers.`
 
   const aiModels = [
-    { provider: 'gemini', model: 'gemini-1.5-flash', version: 'v1beta' },
-    { provider: 'gemini', model: 'gemini-1.5-flash-8b', version: 'v1beta' },
-    { provider: 'gemini', model: 'gemini-3.1-flash-lite', version: 'v1beta' }
+    { provider: 'gemini', model: 'gemini-1.5-flash-latest', version: 'v1beta' },
+    { provider: 'gemini', model: 'gemini-1.5-pro-latest', version: 'v1beta' },
+    { provider: 'gemini', model: 'gemini-1.5-flash-8b-latest', version: 'v1beta' }
   ]
 
   for (const ai of aiModels) {
