@@ -139,15 +139,23 @@ app.post('/api/chat', requireSession, async (req, res) => {
     try {
       const url = `https://generativelanguage.googleapis.com/${ai.version}/models/${ai.model}:generateContent?key=${geminiApiKey}`
       
-      // Ensure history alternates: user, model, user, model...
+      // Format contents for Gemini v1 (no system_instruction field in some v1 models)
       let geminiContents = []
+      
+      // Inject system prompt as first message if history is empty or as context
+      geminiContents.push({
+        role: 'user',
+        parts: [{ text: `SYSTEM INSTRUCTION: ${systemPrompt}\n\nUSER MESSAGE BELOW:` }]
+      })
+
       if (history.length > 0) {
         history.forEach((m, idx) => {
-          const expectedRole = idx % 2 === 0 ? 'user' : 'model'
+          // Gemini v1 expects strict user/model alternating
+          // Since we started with a user message (system prompt), next must be model
           const actualRole = m.role === 'model' ? 'model' : 'user'
           
-          // Only push if it matches the expected alternating pattern to avoid API errors
-          if (actualRole === expectedRole) {
+          // Ensure we don't have consecutive roles
+          if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role !== actualRole) {
             geminiContents.push({
               role: actualRole,
               parts: [{ text: m.text }]
@@ -156,18 +164,20 @@ app.post('/api/chat', requireSession, async (req, res) => {
         })
       }
 
-      // If no valid history or last was model, add the current message
-      if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role === 'model') {
+      // Ensure the very last message is from the user
+      if (geminiContents[geminiContents.length - 1].role === 'model') {
         geminiContents.push({
           role: 'user',
           parts: [{ text: fallbackMessage }]
         })
+      } else if (history.length === 0) {
+        // If history was empty, our first message was the system prompt + fallback
+        // we can just append the actual user message to that first part if needed, 
+        // but the above logic handles a fresh start well enough.
+        geminiContents[0].parts[0].text += `\n${fallbackMessage}`
       }
       
       const payload = {
-        system_instruction: { 
-          parts: [{ text: systemPrompt }] 
-        },
         contents: geminiContents,
         generationConfig: {
           temperature: 0.7,
