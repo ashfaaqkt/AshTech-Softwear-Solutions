@@ -67,7 +67,7 @@ app.get('/api/session', (req, res) => {
   const token = issueStatelessSession()
   res.setHeader(
     'Set-Cookie',
-    `${sessionName}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24}`,
+    `${sessionName}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24}`,
   )
   res.json({ ok: true })
 })
@@ -105,6 +105,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
   const localFallback = "I am AshTech AI. I can help you with information about AshTech Software Solutions and our founder Ashfaaq KT. How can I assist you today?"
 
   if (!geminiApiKey) {
+    console.warn("GEMINI_API_KEY is missing")
     res.json({ reply: localFallback })
     return
   }
@@ -128,8 +129,9 @@ app.post('/api/chat', requireSession, async (req, res) => {
     - If the user speaks Arabic, you MUST respond in Arabic.
     - Provide helpful, professional, and detailed answers.`
 
-  // Gemini models (Reliable Free Tier)
+  // Gemini models
   const aiModels = [
+    { provider: 'gemini', model: 'gemini-2.0-flash-lite-preview-02-05' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'gemini', model: 'gemini-1.5-flash-8b' }
   ]
@@ -143,11 +145,15 @@ app.post('/api/chat', requireSession, async (req, res) => {
             role: m.role === 'model' ? 'model' : 'user',
             parts: [{ text: m.text }]
           }))
-        : []
+        : [{ role: 'user', parts: [{ text: fallbackMessage }] }]
       
       const payload = {
         system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: geminiContents.length > 0 ? geminiContents : [{ role: 'user', parts: [{ text: fallbackMessage }] }]
+        contents: geminiContents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        }
       }
 
       const response = await fetch(url, {
@@ -156,15 +162,14 @@ app.post('/api/chat', requireSession, async (req, res) => {
         body: JSON.stringify(payload)
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.warn(`AI model ${ai.model} returned status ${response.status}`, errorData)
-        
+        console.warn(`AI model ${ai.model} returned status ${response.status}`, data)
         if (response.status === 429) break 
         continue
       }
 
-      const data = await response.json()
       const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
 
       if (reply) {
@@ -176,7 +181,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
     }
   }
 
-  res.json({ reply: "I'm having a bit of trouble connecting to my knowledge base. Please try again in a moment, or feel free to ask about our services later!" })
+  res.json({ reply: "I'm having a bit of trouble connecting to my knowledge base. Please try again in a moment!" })
 })
 
 export default app

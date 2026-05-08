@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 .tmp_docx/
 .temp_docx/
+
+.env
+.env.local
+.env.*.local
