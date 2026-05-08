@@ -129,25 +129,41 @@ app.post('/api/chat', requireSession, async (req, res) => {
     - If the user speaks Arabic, you MUST respond in Arabic.
     - Provide helpful, professional, and detailed answers.`
 
-  // Gemini models
+  // Gemini models with explicit versions
   const aiModels = [
-    { provider: 'gemini', model: 'gemini-2.0-flash-lite-preview-02-05' },
-    { provider: 'gemini', model: 'gemini-1.5-flash' },
-    { provider: 'gemini', model: 'gemini-1.5-flash-8b' }
+    { provider: 'gemini', model: 'gemini-1.5-flash', version: 'v1' },
+    { provider: 'gemini', model: 'gemini-1.5-flash-8b', version: 'v1' },
+    { provider: 'gemini', model: 'gemini-2.0-flash-lite-preview-02-05', version: 'v1beta' }
   ]
 
   for (const ai of aiModels) {
     try {
-      // Use v1 for stable models, v1beta for preview models
-      const apiVersion = ai.model.includes('preview') ? 'v1beta' : 'v1'
-      const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${ai.model}:generateContent?key=${geminiApiKey}`
+      const url = `https://generativelanguage.googleapis.com/${ai.version}/models/${ai.model}:generateContent?key=${geminiApiKey}`
       
-      const geminiContents = history.length > 0 
-        ? history.map(m => ({
-            role: m.role === 'model' ? 'model' : 'user',
-            parts: [{ text: m.text }]
-          }))
-        : [{ role: 'user', parts: [{ text: fallbackMessage }] }]
+      // Ensure history alternates: user, model, user, model...
+      let geminiContents = []
+      if (history.length > 0) {
+        history.forEach((m, idx) => {
+          const expectedRole = idx % 2 === 0 ? 'user' : 'model'
+          const actualRole = m.role === 'model' ? 'model' : 'user'
+          
+          // Only push if it matches the expected alternating pattern to avoid API errors
+          if (actualRole === expectedRole) {
+            geminiContents.push({
+              role: actualRole,
+              parts: [{ text: m.text }]
+            })
+          }
+        })
+      }
+
+      // If no valid history or last was model, add the current message
+      if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role === 'model') {
+        geminiContents.push({
+          role: 'user',
+          parts: [{ text: fallbackMessage }]
+        })
+      }
       
       const payload = {
         system_instruction: { 
@@ -160,7 +176,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
         }
       }
 
-      console.log(`Attempting Gemini request to ${ai.model} via ${apiVersion}...`)
+      console.log(`Attempting Gemini request to ${ai.model} via ${ai.version}...`)
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,7 +186,7 @@ app.post('/api/chat', requireSession, async (req, res) => {
       const data = await response.json()
 
       if (!response.ok) {
-        console.error(`Gemini Error [${ai.model}] (${apiVersion}):`, JSON.stringify(data, null, 2))
+        console.error(`Gemini Error [${ai.model}] (${ai.version}):`, JSON.stringify(data, null, 2))
         if (response.status === 429) break 
         continue
       }
